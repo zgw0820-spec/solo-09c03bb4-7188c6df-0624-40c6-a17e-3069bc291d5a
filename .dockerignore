@@ -1,0 +1,8 @@
+.git
+.gitignore
+.dockerignore
+data/
+scripts/
+__pycache__/
+*.pyc
+README.md

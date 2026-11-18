@@ -1,0 +1,45 @@
+name: vm-addr-lease
+
+# 两个实例共享同一个命名卷（同一个 SQLite 数据库文件），
+# 通过 SQLite WAL + BEGIN IMMEDIATE 保证跨实例的分配原子性。
+services:
+  node1:
+    build: .
+    container_name: lease-node1
+    ports:
+      - "8001:8000"
+    environment:
+      INSTANCE_ID: node1
+      DB_PATH: /data/leases.db
+      POOL_CIDR: 10.99.0.0/29   # 6 个可用地址：10.99.0.1 ~ 10.99.0.6
+      ALLOW_RESET: "1"          # 仅演示/自测用途，生产环境请移除
+    volumes:
+      - lease-data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8000/api/health',timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  node2:
+    build: .
+    container_name: lease-node2
+    ports:
+      - "8002:8000"
+    environment:
+      INSTANCE_ID: node2
+      DB_PATH: /data/leases.db
+      POOL_CIDR: 10.99.0.0/29
+      ALLOW_RESET: "1"          # 仅演示/自测用途，生产环境请移除
+    volumes:
+      - lease-data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8000/api/health',timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  lease-data:
